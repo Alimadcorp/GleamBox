@@ -10,6 +10,8 @@ public class RodNFish : MonoBehaviour
     public float growSpeed = 0.1f;
     public float fishGrowSpeed = 1f;
     public float fishSize = 1f;
+    public float fishSizeM = 1f;
+    public float fishSizeX = 0f;
     public float fishSpd = 2f;
     public float fishSrpd = 3f;
     public float moveSpeed = 1f;
@@ -40,6 +42,7 @@ public class RodNFish : MonoBehaviour
             }
             fishY = fish.transform.localPosition.y;
         }
+        fish.transform.localScale = Vector3.one * Mathf.Lerp(fish.transform.localScale.x, fishSize * fishSizeM * fishSizeX, 0.5f);
     }
     private IEnumerator spawn()
     {
@@ -48,11 +51,7 @@ public class RodNFish : MonoBehaviour
             transform.localScale += new Vector3(0, Time.deltaTime * growSpeed, 0);
             yield return null;
         }
-        while (fish.transform.localScale.x < fishSize)
-        {
-            fish.transform.localScale += new Vector3(1, 1, 0) * Time.deltaTime * fishGrowSpeed;
-            yield return null;
-        }
+        fishSizeM = 1f;
         spawned = true;
 
     }
@@ -65,11 +64,6 @@ public class RodNFish : MonoBehaviour
             yield return null;
         }
         transform.localScale = new Vector3(transform.localScale.x, 0, transform.localScale.z);
-        while (fish.transform.localScale.x > 0)
-        {
-            fish.transform.localScale -= new Vector3(1, 1, 0) * Time.deltaTime * fishGrowSpeed;
-            yield return null;
-        }
-        fish.transform.localScale = Vector3.zero;
+        fishSizeM = 0f;
     }
 }

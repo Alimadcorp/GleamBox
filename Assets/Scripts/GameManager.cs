@@ -29,17 +29,17 @@ public class GameManager : MonoBehaviour
     public Transform scoreFadeSource;
     public GameObject askUsername;
     public FlappyWallSpawner flappyWallSpawner;
-    public TextMeshPro multiText;
+    public TextMeshProUGUI multiText;
     public AudioClip moreScore;
     public AudioSource music;
     public GameObject switchText;
     public GameObject comboAdd;
     public GameObject comboSpawner;
-    public TextMeshPro hintText;
-    public TextMeshPro titleText;
-    public TextMeshPro blobText;
-    public TextMeshPro modeText;
-    public TextMeshPro comboText;
+    public TextMeshProUGUI hintText;
+    public TextMeshProUGUI titleText;
+    public TextMeshProUGUI blobText;
+    public TextMeshProUGUI modeText;
+    public TextMeshProUGUI comboText;
     public GameObject blob;
     public Light2D bgLight;
     public float comboMultiplier = 1;
@@ -61,6 +61,7 @@ public class GameManager : MonoBehaviour
     public Image[] imgs;
     public Color[] GameModeColors;
     public Color[] comboColors;
+    public CanvasGroup scores;
 
     [SerializedDictionary("ID", "Gradient")]
     public SerializedDictionary<string, Gradient> Trails;
@@ -166,6 +167,7 @@ public class GameManager : MonoBehaviour
             {
                 imgs[i].color = new Color(imgs[i].color.r, imgs[i].color.g, imgs[i].color.b, alpha);
             }
+            scores.alpha = 1 - alpha;
         }
         else
         {
@@ -174,6 +176,7 @@ public class GameManager : MonoBehaviour
             {
                 imgs[i].gameObject.GetComponent<Button>().interactable = false;
             }
+            scores.alpha = 1;
         }
     }
 
@@ -217,7 +220,7 @@ public class GameManager : MonoBehaviour
         if ((gameMode == GameMode.AntiClockwise || gameMode == GameMode.Clockwise) && blobAmt < boxesPerSpawn)
         {
             Blob newBlob = Instantiate(blob, RandomTransform(), Quaternion.identity, bigDaddy.transform).GetComponent<Blob>();
-            int r = (isLucky > 0) ? Random.Range(1,3) : Random.Range(0, 15);
+            int r = (isLucky > 0) ? Random.Range(1, 3) : Random.Range(0, 15);
             if (r == 1)
             {
                 int random = (int)Random.Range(0, 4);
@@ -307,7 +310,7 @@ public class GameManager : MonoBehaviour
                 tmp = Instantiate(switchText, bigDaddy.transform.position + Vector3.up * 3, Quaternion.identity, bigDaddy.transform).GetComponent<TextMeshPro>();
                 tmp.text = "Fish\nMode";
                 modeText.text = "Fish Mode";
-                hintText.text = "Hold to pull";
+                hintText.text = "Hold to lift, keep the bar aligned to the fish";
                 hintVisible = true;
                 EndBlobs();
                 Invoke("EndBlobs", 1f);
@@ -324,8 +327,13 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void NextGameMode()
+    public void NextGameMode()
     {
+        scoreSinceChange = 0;
+        if (gameMode == GameMode.Flappy)
+        {
+            DestroyAllPipes();
+        }
         sinceGameModeChange = 0f;
         scoreSinceChange = 0;
         boxesPerSpawn++;
@@ -334,10 +342,35 @@ public class GameManager : MonoBehaviour
             Player.Instance.sinceLastCollect = 0;
         }
         int current = (int)gameMode;
+        if (gameMode == GameMode.Fish)
+        {
+            RodNFish.instance.fishSizeX = 0f;
+        }
         int next = 3;
         do { next = Random.Range(0, 4); }
         while (next == current);
         GameMode nextMode = (GameMode)next;
+        if (nextMode == GameMode.Fish)
+        {
+            RodNFish.instance.fishSizeX = 1f;
+        }
+        SetGamemode(nextMode);
+    }
+    public void NextGameMode(bool bruh)
+    {
+        scoreSinceChange = 0;
+        if (gameMode == GameMode.Flappy)
+        {
+            DestroyAllPipes();
+        }
+        sinceGameModeChange = 0f;
+        scoreSinceChange = 0;
+        boxesPerSpawn++;
+        if (comboMultiplier > 1)
+        {
+            Player.Instance.sinceLastCollect = 0;
+        }
+        GameMode nextMode = GameMode.Clockwise;
         SetGamemode(nextMode);
     }
 
@@ -364,11 +397,6 @@ public class GameManager : MonoBehaviour
 
         if (scoreSinceChange > switchThreshold * multiplier)
         {
-            scoreSinceChange = 0;
-            if (gameMode == GameMode.Flappy)
-            {
-                DestroyAllPipes();
-            }
             NextGameMode();
         }
     }

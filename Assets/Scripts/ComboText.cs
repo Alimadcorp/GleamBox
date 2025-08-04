@@ -12,7 +12,8 @@ public class ComboText : MonoBehaviour
     }
     public void SetColor(Color color, bool _staticOne)
     {
-        GetComponent<TextMeshPro>().color = color;
+        if (_staticOne) { GetComponent<TextMeshProUGUI>().color = color; }
+        else { GetComponent<TextMeshPro>().color = color; }
         staticOne = _staticOne;
     }
     void Update()

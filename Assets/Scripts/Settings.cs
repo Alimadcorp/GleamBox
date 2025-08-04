@@ -45,11 +45,12 @@ public class Settings : MonoBehaviour
     public float[] priceIncrement;
     public int[] maxUpdates;
     public int[] updateLevels;
+    public bool consentEnabled = false;
     void Start()
     {
         shownUpgradePrices = initialUpgradePrices.ToArray();
         consntToSharingI.isOn = PlayerPrefs.GetInt("Consent") == 1;
-        if (PlayerPrefs.GetInt("Consent", -1) == -1)
+        if (PlayerPrefs.GetInt("Consent", -1) == -1 && consentEnabled)
         {
             consent.SetActive(true);
             panel.SetActive(true);

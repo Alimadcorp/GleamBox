@@ -235,8 +235,6 @@ public class LeaderboardManager : MonoBehaviour
         if (sec)
         {
             secButton.interactable = false;
-            secText.color = Color.black;
-            mainText.color = Color.white;
             mainButton.interactable = true;
             parent.SetActive(false);
             parent2.SetActive(true);
@@ -244,8 +242,6 @@ public class LeaderboardManager : MonoBehaviour
         else
         {
             secButton.interactable = true;
-            secText.color = Color.white;
-            mainText.color = Color.black;
             mainButton.interactable = false;
             parent.SetActive(true);
             parent2.SetActive(false);

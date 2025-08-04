@@ -20,7 +20,7 @@ public class Player : MonoBehaviour
     public AudioSource music;
     public TextMeshPro ScoreText;
     public TextMeshPro HighScoreText;
-    public TextMeshPro ScoreTextMain;
+    public TextMeshProUGUI ScoreTextMain;
     public TextMeshProUGUI count;
     public TextMeshProUGUI pausedText;
     public TrailRenderer trail;
@@ -48,6 +48,7 @@ public class Player : MonoBehaviour
     public bool ContinueMode = false;
     public bool lost = false;
     public bool GameIsPaused = false;
+    public int livesRemaining = 1;
     private void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -58,14 +59,15 @@ public class Player : MonoBehaviour
         normalActions.Click.started += ctx => Click();
         normalActions.Click.canceled += ctx => UnClick();
         normalActions.Pause.performed += ctx => Pause();
-        if(Application.platform == RuntimePlatform.WindowsEditor)
+        if (Application.platform == RuntimePlatform.WindowsEditor)
         {
             normalActions.Screenshot.performed += ctx => Screenshot();
         }
         Instance = this;
     }
     private void Screenshot() { StartCoroutine(screenshot()); }
-    private IEnumerator screenshot() {
+    private IEnumerator screenshot()
+    {
         yield return new WaitForEndOfFrame();
         ScreenCapture.CaptureScreenshot(Path.Join(Application.persistentDataPath, UnityEngine.Random.Range(10000, 99999).ToString() + ".png"));
         Debug.Log(Path.Join(Application.persistentDataPath, UnityEngine.Random.Range(10000, 99999).ToString() + ".png"));
@@ -110,7 +112,7 @@ public class Player : MonoBehaviour
                     break;
             }
         }
-        if(game.gameMode == GameManager.GameMode.Fish)
+        if (game.gameMode == GameManager.GameMode.Fish)
         {
             fishTimer -= Time.fixedDeltaTime;
             if (MouseHeld)
@@ -118,9 +120,9 @@ public class Player : MonoBehaviour
                 rb.AddForce(Vector3.up * fishForce, ForceMode2D.Force);
             }
             float yDist = Mathf.Abs(transform.position.y - RodNFish.fishY);
-            if(yDist < fishHeight)
+            if (yDist < fishHeight)
             {
-                RodNFish.instance.fish.GetComponent<SpriteRenderer>().color = Color.white;
+                RodNFish.instance.fishSizeM = 1.3f;
                 if (fishTimer < 0 && !initialStop)
                 {
                     game.AddScore((int)(fishHeight - yDist + 30), "Fishy");
@@ -129,7 +131,7 @@ public class Player : MonoBehaviour
             }
             else
             {
-                RodNFish.instance.fish.GetComponent<SpriteRenderer>().color = Color.red;
+                RodNFish.instance.fishSizeM = 1f;
             }
         }
     }
@@ -139,16 +141,20 @@ public class Player : MonoBehaviour
     }
     private void Click()
     {
+        if (GameIsPaused)
+        {
+            StartCoroutine(Unpause());
+        }
         if (ContinueMode) { OnContinue(); ContinueMode = false; }
         if (Time.timeSinceLevelLoad < 1 || Time.timeScale < 0.001f) return;
         if (!ClickEnabled) return;
         if (coolDown > 0) return;
-		if(lost) return;
+        if (lost) return;
         if (game.gameMode == GameManager.GameMode.Clockwise || game.gameMode == GameManager.GameMode.AntiClockwise)
         {
             sinceLastCollect++;
         }
-        if(sinceLastCollect >= GameManager.Instance.comboBreaker)
+        if (sinceLastCollect >= GameManager.Instance.comboBreaker)
         {
             game.AddCombo(0);
         }
@@ -214,10 +220,40 @@ public class Player : MonoBehaviour
     }
     public void Restart(Collision2D collision)
     {
-		if(lost) return;
-        game.over = true;
-		lost = true;
-        StartCoroutine(RestartCoroutine(collision));
+        if (lost) return;
+        if (livesRemaining == 0 || score < 5000)
+        {
+            game.over = true;
+            lost = true;
+            StartCoroutine(RestartCoroutine(collision));
+        }
+        else
+        {
+            livesRemaining--;
+            StartCoroutine(BackToSpawn());
+            StartCoroutine(Flashy());
+        }
+    }
+    private IEnumerator BackToSpawn()
+    {
+        GetComponent<Rigidbody2D>().linearVelocity = Vector2.zero;
+        for (float t = 0; t <= 1.5f; t += Time.unscaledDeltaTime)
+        {
+            transform.localPosition = Vector3.Lerp(transform.localPosition, new Vector3(0, 0, transform.localPosition.z), 0.4f);
+            yield return null;
+        }
+        game.NextGameMode(true);
+    }
+    private IEnumerator Flashy()
+    {
+        Color i = GetComponent<SpriteRenderer>().color;
+        for (float t = 0; t <= 8; t++)
+        {
+            GetComponent<SpriteRenderer>().color = Color.white;
+            yield return new WaitForSecondsRealtime(0.2f);
+            GetComponent<SpriteRenderer>().color = i;
+            yield return new WaitForSecondsRealtime(0.2f);
+        }
     }
     bool submitt = false;
     private IEnumerator RestartCoroutine(Collision2D collision)
@@ -225,7 +261,7 @@ public class Player : MonoBehaviour
         ParticleSystem system = GetComponentInChildren<ParticleSystem>();
         system.startColor = GetComponent<SpriteRenderer>().color;
         string history = PlayerPrefs.GetString("history", DateTime.UtcNow.ToString().Replace(" ", "T"));
-        history += $":{GameManager.Score.ToString()}.{(int)(Time.timeSinceLevelLoad*100)}";
+        history += $":{GameManager.Score.ToString()}.{(int)(Time.timeSinceLevelLoad * 100)}";
         int LastHighScore = PlayerPrefs.GetInt("highScore");
         int HighScore = PlayerPrefs.GetInt("highScore");
         if (GameManager.Score > HighScore)
@@ -246,7 +282,7 @@ public class Player : MonoBehaviour
         }
         system.gameObject.SetActive(true);
         system.gameObject.transform.position = collision.contacts[0].point;
-        if(collision.contacts.Length == 2)
+        if (collision.contacts.Length == 2)
         {
             system.gameObject.transform.position = Vector3.Lerp(collision.contacts[0].point, collision.contacts[1].point, 0.5f);
         }
@@ -259,10 +295,12 @@ public class Player : MonoBehaviour
                 music.pitch = Time.timeScale;
                 yield return new WaitForSecondsRealtime(1f / 60f);
             }
-        } else {
-			yield return new WaitForSecondsRealtime(0.1f);
-			Time.timeScale = 0;
-		}
+        }
+        else
+        {
+            yield return new WaitForSecondsRealtime(0.1f);
+            Time.timeScale = 0;
+        }
         yield return new WaitForEndOfFrame();
 
         Texture2D screenshot = ScreenCapture.CaptureScreenshotAsTexture();
@@ -323,16 +361,20 @@ public class Player : MonoBehaviour
             if (sinceLastCollect == 0)
             {
                 game.AddCombo(1f);
-            } else if (sinceLastCollect == 1)
+            }
+            else if (sinceLastCollect == 1)
             {
                 game.AddCombo(0.5f);
-            } else if (sinceLastCollect == 2)
+            }
+            else if (sinceLastCollect == 2)
             {
                 game.AddCombo(0.25f);
-            } else if (sinceLastCollect == game.comboBreaker)
+            }
+            else if (sinceLastCollect == game.comboBreaker)
             {
                 game.AddCombo(0);
-            } else
+            }
+            else
             {
                 game.AddCombo(0.25f);
             }
@@ -397,6 +439,8 @@ public class Player : MonoBehaviour
             yield return null;
         }
         transform.localScale = new Vector3(1, 1, 1);
+        RodNFish.instance.fishSizeM = 0f;
+
         GetComponent<BoxCollider2D>().size = new Vector2(0.2f, 0.2f);
         yield return null;
     }
@@ -466,7 +510,8 @@ public class Player : MonoBehaviour
         yield return new WaitForSecondsRealtime(1f);
         count.text = "";
         float target = GameManager.Instance.speedMultiplier > 0 ? 0.6f : 1f;
-        while (Time.timeScale < target) {
+        while (Time.timeScale < target)
+        {
             Time.timeScale += Time.unscaledDeltaTime * 1f;
             yield return null;
         }
