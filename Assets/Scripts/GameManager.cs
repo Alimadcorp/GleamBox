@@ -117,6 +117,11 @@ public class GameManager : MonoBehaviour
             Powerups.instance.AddPowerup("Luck", 5f * powerupDuration);
             isLucky++;
         }
+        else if (name == "More")
+        {
+            Powerups.instance.AddPowerup("More", 15f * powerupDuration);
+            boxesPerSpawn += 2;
+        }
         AddScore(50, "Collected Powerup");
     }
     public void RemovePowerup(string name)
@@ -136,6 +141,10 @@ public class GameManager : MonoBehaviour
         else if (name == "Luck")
         {
             isLucky--;
+        }
+        else if (name == "More")
+        {
+            boxesPerSpawn -= 2;
         }
     }
     void FixedUpdate()
@@ -220,12 +229,62 @@ public class GameManager : MonoBehaviour
         if ((gameMode == GameMode.AntiClockwise || gameMode == GameMode.Clockwise) && blobAmt < boxesPerSpawn)
         {
             Blob newBlob = Instantiate(blob, RandomTransform(), Quaternion.identity, bigDaddy.transform).GetComponent<Blob>();
-            int r = (isLucky > 0) ? Random.Range(1, 3) : Random.Range(0, 15);
-            if (r == 1)
+            string powerupId = "";
+            int spawnChanceMax = 0;
+            int powerupCount = 0;
+
+            if (isLucky > 0)
             {
-                int random = (int)Random.Range(0, 4);
-                if (random == 3 && (isLucky > 0)) random--;
-                newBlob.MakePowerup(Blob.intToId(random));
+                spawnChanceMax = 8;
+                powerupCount = 7;
+            }
+            else
+            {
+                spawnChanceMax = 60;
+                powerupCount = 7;
+            }
+            int overallRoll = Random.Range(0, spawnChanceMax);
+
+            if (overallRoll < powerupCount)
+            {
+                int typeRoll = Random.Range(0, 7);
+
+                if (typeRoll < 3)
+                {
+                    powerupId = "More";
+                }
+                else if (typeRoll == 3)
+                {
+                    powerupId = "2x";
+                }
+                else if (typeRoll == 4)
+                {
+                    powerupId = "4x";
+                }
+                else if (typeRoll == 5)
+                {
+                    powerupId = "slow";
+                }
+                else
+                {
+                    powerupId = "luck";
+                }
+
+                if (powerupId == "luck" && isLucky > 0)
+                {
+                    int reRollCount = 0;
+                    do
+                    {
+                        typeRoll = Random.Range(0, 6);
+                        if (typeRoll < 3) powerupId = "More";
+                        else if (typeRoll == 3) powerupId = "2x";
+                        else if (typeRoll == 4) powerupId = "4x";
+                        else powerupId = "slow";
+                        reRollCount++;
+                    } while (powerupId == "luck" && reRollCount < 10);
+                }
+
+                newBlob.MakePowerup(powerupId);
             }
             blobAmt++;
         }
