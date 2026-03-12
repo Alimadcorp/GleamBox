@@ -6,7 +6,7 @@ using UnityEngine.Rendering.Universal;
 public class Blob : MonoBehaviour
 {
     public string id = "";
-    public Color[] colorsForPowerups = new Color[3];
+    public Color[] colorsForPowerups = new Color[5];
     public TextMeshPro view;
     public GameObject blot;
     public bool Blowing = false;
@@ -31,6 +31,7 @@ public class Blob : MonoBehaviour
         "4x" => 1,
         "slow" => 2,
         "luck" => 3,
+        "More" => 4,
         _ => 0
     };
 
@@ -40,6 +41,7 @@ public class Blob : MonoBehaviour
         1 => "4x",
         2 => "slow",
         3 => "luck",
+        4 => "More",
         _ => ""
     };
 
@@ -153,12 +155,11 @@ public class Blob : MonoBehaviour
         Destroy(gameObject);
     }
 
-    private void SafeSetColor(Component comp, Color c)
-    {
-        switch (comp)
+        private void SafeSetColor(Component comp, Color c)
         {
-            case SpriteRenderer sr: sr.color = c; break;
-            case Light2D l: l.color = c; break;
-        }
-    }
-}
+            switch (comp)
+            {
+                case SpriteRenderer sr: sr.color = c; break;
+                case Light2D l: l.color = c; break;
+            }
+        }}

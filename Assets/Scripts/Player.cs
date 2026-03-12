@@ -242,7 +242,7 @@ public class Player : MonoBehaviour
             transform.localPosition = Vector3.Lerp(transform.localPosition, new Vector3(0, 0, transform.localPosition.z), 0.4f);
             yield return null;
         }
-        game.NextGameMode(true);
+        SceneManager.LoadSceneAsync(SceneManager.GetActiveScene().buildIndex);
     }
     private IEnumerator Flashy()
     {
